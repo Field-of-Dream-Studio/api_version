@@ -10,15 +10,10 @@ use crate::helper::{
 pub fn generate_panics_docs(
     cursor: &mut Peekable<impl Iterator<Item = TokenTree>>,
 ) -> Result<TokenStream, TokenStream> {
-    if is_no_panic_sentinel(cursor.peek()) {
+    if let Some(sentinel) = PanicSentinel::from_token(cursor.peek()) {
         cursor.next();
-        expect_end(
-            cursor,
-            "the 'never'/'none' sentinel is exclusive; remove additional arguments",
-        )?;
-        return Ok(generate_doc_attribute(
-            "# Panics\n\nThis function does not panic.",
-        ));
+        expect_end(cursor, sentinel.exclusive_error())?;
+        return Ok(generate_doc_attribute(sentinel.documentation()));
     }
 
     let literals = parse_string_literal_list(cursor)?;
@@ -27,7 +22,7 @@ pub fn generate_panics_docs(
     if literals.is_empty() {
         return Err(generate_compile_error(
             Span::call_site(),
-            "#[panics(...)] requires at least one condition string, or the 'never'/'none' sentinel",
+            "#[panics(...)] requires at least one condition string, or one of the bare sentinels: 'never', 'none', or 'always'",
         ));
     }
 
@@ -46,10 +41,36 @@ pub fn generate_panics_docs(
     .render())
 }
 
-fn is_no_panic_sentinel(token: Option<&TokenTree>) -> bool {
-    matches!(
-        token,
-        Some(TokenTree::Ident(ident))
-            if matches!(ident.to_string().as_str(), "never" | "none")
-    )
+#[derive(Clone, Copy)]
+enum PanicSentinel {
+    Never,
+    Always,
+}
+
+impl PanicSentinel {
+    fn from_token(token: Option<&TokenTree>) -> Option<Self> {
+        let Some(TokenTree::Ident(ident)) = token else {
+            return None;
+        };
+
+        match ident.to_string().as_str() {
+            "never" | "none" => Some(Self::Never),
+            "always" => Some(Self::Always),
+            _ => None,
+        }
+    }
+
+    fn exclusive_error(self) -> &'static str {
+        match self {
+            Self::Never => "the 'never'/'none' sentinel is exclusive; remove additional arguments",
+            Self::Always => "the 'always' sentinel is exclusive; remove additional arguments",
+        }
+    }
+
+    fn documentation(self) -> &'static str {
+        match self {
+            Self::Never => "# Panics\n\nThis function does not panic.",
+            Self::Always => "# Panics\n\nThis function always panics.",
+        }
+    }
 }

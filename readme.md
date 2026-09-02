@@ -38,17 +38,21 @@ pub fn versioned() {}
 pub fn history() {}
 
 // #[safety] — comma-separated list of preconditions rendered as a
-// numbered `# Safety` section.
-#[safety("caller must ensure ptr is non-null")]
+// numbered `# Safety` section. See "Writing conditions" below.
+#[safety("ptr is non-null")]
 pub unsafe fn peek(_ptr: *const u8) {}
 
-// #[panics] — comma-separated list of panic conditions; the bare
-// sentinel `never` (or `none`) documents non-panicking functions.
-#[panics("when the input is zero")]
+// #[panics] — comma-separated list of panic conditions.
+// Sentinels: `never` / `none` for a non-panicking fn; `always` for a fn
+// that panics unconditionally.
+#[panics("the input is zero")]
 pub fn may_panic(_input: u32) {}
 
 #[panics(never)]
 pub fn total() {}
+
+#[panics(always)]
+pub fn unreachable_marker() { panic!("not implemented") }
 
 // #[author] — one entry per attribute (stacked for multiple).
 // Fields: name (required), email, github, role (optional).
@@ -60,6 +64,37 @@ Version-entry fields:
 `status, since = "…" [, note = "…"] [, date = "…"]`.
 Statuses: `unstable`, `stable`, `update`, `update_unstable`, `deprecated`
 (case-insensitive). Authorship is a separate concern — use `#[author]`.
+
+## Writing conditions
+
+`#[safety]` and `#[panics]` each render their conditions after a fixed
+preamble, followed by a numbered list:
+
+- `#[safety(...)]` renders `The caller must uphold:`
+- `#[panics(...)]` renders `This function panics when:`
+
+**Write each condition as a bare clause that completes the preamble.**
+Do not repeat the preamble; do not begin with `if` / `when`; do not phrase
+as an error message. The preamble already supplies the frame.
+
+```rust
+// good — reads as "The caller must uphold: ptr is non-null"
+#[safety("ptr is non-null")]
+
+// good — reads as "This function panics when: the input is zero"
+#[panics("the input is zero")]
+
+// bad — reads as "This function panics when: when the input is zero"
+#[panics("when the input is zero")]
+
+// bad — reads as "This function panics when: Failed to open the file"
+#[panics("Failed to open the file")]
+```
+
+Sentinels cover the trivial cases without a condition string:
+
+- `#[panics(never)]` (or `#[panics(none)]`): the function does not panic.
+- `#[panics(always)]`: the function panics on every invocation.
 
 ## Ordering of stacked attributes
 
@@ -83,8 +118,8 @@ authorship last:
     "src and dst regions do not overlap"
 )]
 #[panics(
-    "on debug builds when count exceeds 1 << 30",
-    "if the source or destination pointer is null"
+    "count exceeds 1 << 30 on debug builds",
+    "the source or destination pointer is null"
 )]
 /// Copy `count` bytes from `src` to `dst`.
 ///

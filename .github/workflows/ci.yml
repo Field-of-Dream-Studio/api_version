@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - 'theme/**'
+  pull_request:
+    branches:
+      - master
+      - 'theme/**'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate:
+    name: Test and compile examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install Rust 1.88.0
+        run: rustup toolchain install 1.88.0 --profile minimal
+
+      - name: Run library tests
+        run: rustup run 1.88.0 cargo test --lib --all-features
+
+      - name: Run documentation tests
+        run: rustup run 1.88.0 cargo test --doc --all-features
+
+      - name: Compile examples
+        run: rustup run 1.88.0 cargo check --examples --all-features

@@ -26,8 +26,8 @@ use av::{author, panics, safety, ver, verlog};
     "src and dst regions do not overlap"
 )]
 #[panics(
-    "on debug builds when count exceeds 1 << 30",
-    "if the source or destination pointer is null"
+    "count exceeds 1 << 30 on debug builds",
+    "the source or destination pointer is null"
 )]
 #[allow(unsafe_op_in_unsafe_fn)]
 /// Copy `count` bytes from `src` to `dst`.
