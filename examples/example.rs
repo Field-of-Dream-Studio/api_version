@@ -21,6 +21,11 @@ pub fn may_panic(_input: u32) {}
 #[panics(never)]
 pub fn never_panics() {}
 
+#[panics(always)]
+pub fn always_panics() -> ! {
+    panic!("not implemented")
+}
+
 #[author(name = "Redstone", email = "redstone@example.com")]
 pub fn authored() {}
 

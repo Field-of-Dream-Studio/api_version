@@ -6,9 +6,9 @@ labels: ""
 assignees: ""
 --- 
 
-**Family:** <!-- fill from OWNERSHIP.md once av is registered -->
+**Family:** Trans
 
-**Component:** av
+**Component:** AV
 
 ### Problem
 

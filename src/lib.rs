@@ -110,7 +110,10 @@ pub fn safety(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// Document when a function panics.
 ///
 /// Accepts a comma-separated list of string literals rendered under `# Panics`, or
-/// the bare sentinel `never` / `none` to document that the function does not panic.
+/// one of these bare sentinels:
+///
+/// - `never` / `none` documents that the function does not panic.
+/// - `always` documents that the function panics on every invocation.
 ///
 /// ```ignore
 /// #[panics("when index is out of bounds", "when the lock is poisoned")]
@@ -118,6 +121,18 @@ pub fn safety(attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// #[panics(never)]
 /// pub fn try_get() -> Option<u8> { ... }
+///
+/// #[panics(always)]
+/// pub fn not_implemented() -> ! { panic!("not implemented") }
+/// ```
+///
+/// Sentinels are exclusive and cannot be combined with condition strings.
+///
+/// ```compile_fail
+/// use av::panics;
+///
+/// #[panics(always, "a fallback condition")]
+/// pub fn invalid() { panic!("not implemented") }
 /// ```
 #[proc_macro_attribute]
 pub fn panics(attr: TokenStream, item: TokenStream) -> TokenStream {
